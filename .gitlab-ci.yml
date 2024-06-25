@@ -1,0 +1,59 @@
+stages:
+  - build
+  - style
+  - test
+  - deploy
+
+project_build:
+  stage: build
+  script:
+    - cd src/cat
+    - make s21_cat
+    - cd ../grep
+    - make s21_grep
+  artifacts:
+    paths:
+      - src/cat/s21_cat
+      - src/grep/s21_grep
+    expire_in: 30 days
+  after_script:
+    - cd ../src
+    - chmod +x telegram_notify.sh
+    - bash telegram_notify.sh
+
+project_style:
+  stage: style
+  script:
+    - cp materials/linters/.clang-format src/
+    - clang-format -n src/cat/*.c src/grep/*.c &> src/clang_out.txt
+    - cat src/clang_out.txt
+    - cd src
+    - bash style_script.sh
+  artifacts:
+    paths:
+      - src/clang_out.txt
+  after_script:
+    - cd src
+    - chmod +x telegram_notify.sh
+    - bash telegram_notify.sh
+
+project_test:
+  stage: test
+  script:
+    - cd src
+    - bash testing.sh
+  after_script:
+    - cd src
+    - chmod +x telegram_notify.sh
+    - bash telegram_notify.sh
+
+project_deploy:
+  stage: deploy
+  script:
+    - cd src
+    - bash deploy_script.sh
+  after_script:
+    - cd src
+    - chmod +x telegram_notify.sh
+    - bash telegram_notify.sh
+  allow_failure: false
